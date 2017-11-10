@@ -77,7 +77,7 @@ public final class DatePickerWheelView extends LinearLayout {
     private View rootView;
     private String mFont;
     private long maxDate;
-    private int validContentTextColor = Integer.MAX_VALUE;
+    //    private int validContentTextColor = Integer.MAX_VALUE;
     private boolean canLoop;
 
     public DatePickerWheelView(Context context) {
@@ -206,16 +206,16 @@ public final class DatePickerWheelView extends LinearLayout {
             final int month = calendar.get(Calendar.MONTH);
             final int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
 
-            if (calendar.getTimeInMillis() > maxDate) {
-                int contentTextColor = daySpinner.getContentTextColor();
-                if (contentTextColor != Color.RED) {
-                    validContentTextColor = contentTextColor;
-                }
-                // TODO: Change color (invalid date)
+//            if (calendar.getTimeInMillis() > maxDate) {
+//                int contentTextColor = daySpinner.getContentTextColor();
+//                if (contentTextColor != Color.RED) {
+//                    validContentTextColor = contentTextColor;
+//                }
+            // TODO: Change color (invalid date)
 //                yearSpinner.setContentTextColor(Color.RED);
 //                monthSpinner.setContentTextColor(Color.RED);
 //                daySpinner.setContentTextColor(Color.RED);
-            }
+//            }
 //            else {
             // TODO: Change color (valid date)
 //                if (validContentTextColor != Integer.MAX_VALUE) {
