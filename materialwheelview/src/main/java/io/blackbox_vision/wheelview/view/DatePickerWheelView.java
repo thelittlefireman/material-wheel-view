@@ -4,6 +4,7 @@ package io.blackbox_vision.wheelview.view;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -26,6 +27,7 @@ import static io.blackbox_vision.wheelview.utils.DateUtils.formatDate;
 public final class DatePickerWheelView extends LinearLayout {
     private static final String TAG = DatePickerWheelView.class.getSimpleName();
 
+    private static final String LONG_MONTH_FORMAT = "MMMM";
     private static final String SHORT_MONTH_FORMAT = "MMM";
     private static final String YEAR_FORMAT = "yyyy";
     private static final String MONTH_FORMAT = "MM";
@@ -49,6 +51,7 @@ public final class DatePickerWheelView extends LinearLayout {
 
     private boolean showDayMonthYear;
     private boolean showShortMonths;
+    private boolean showLongMonths;
 
     @NonNull
     private final List<String> years = new ArrayList<>();
@@ -72,6 +75,10 @@ public final class DatePickerWheelView extends LinearLayout {
     private Locale locale = Locale.getDefault();
 
     private View rootView;
+    private String mFont;
+    private long maxDate;
+    private int validContentTextColor = Integer.MAX_VALUE;
+    private boolean canLoop;
 
     public DatePickerWheelView(Context context) {
         this(context, null, 0);
@@ -105,6 +112,7 @@ public final class DatePickerWheelView extends LinearLayout {
 
                 showDayMonthYear = array.getBoolean(R.styleable.DatePickerWheelView_datePickerWheelViewShowDayMonthYear, false);
                 showShortMonths = array.getBoolean(R.styleable.DatePickerWheelView_datePickerWheelViewShowShortMonths, false);
+                showLongMonths = array.getBoolean(R.styleable.DatePickerWheelView_datePickerWheelViewShowLongMonths, false);
 
                 textSize = array.getDimension(R.styleable.DatePickerWheelView_datePickerWheelViewTextSize, 16F);
 
@@ -112,6 +120,8 @@ public final class DatePickerWheelView extends LinearLayout {
                 maxYear = array.getInt(R.styleable.DatePickerWheelView_datePickerWheelViewMaxYear, 2100);
 
                 initialDate = array.getString(R.styleable.DatePickerWheelView_datePickerWheelViewInitialDate);
+                mFont = array.getString(R.styleable.DatePickerWheelView_datePickerWheelViewFont);
+                canLoop = array.getBoolean(R.styleable.DatePickerWheelView_datePickerWheelViewIsLoopEnabled, false);
             }
         } finally {
             if (null != array) {
@@ -144,6 +154,10 @@ public final class DatePickerWheelView extends LinearLayout {
         monthSpinner.setTextSize(textSize);
         daySpinner.setTextSize(textSize);
 
+        yearSpinner.setIsLoopEnabled(canLoop);
+        monthSpinner.setIsLoopEnabled(canLoop);
+        daySpinner.setIsLoopEnabled(canLoop);
+
         yearSpinner.addOnLoopScrollListener(this::updateYearPosition);
         yearSpinner.addOnLoopScrollListener(this::onDateSelected);
 
@@ -158,10 +172,13 @@ public final class DatePickerWheelView extends LinearLayout {
         drawDayPickerView();
 
         setInitialPositions();
+        setFont(mFont);
     }
 
     private void updateYearPosition(@NonNull Object item, int position) {
         this.yearPos = position;
+        // Leap years have 29 days in February
+        drawDayPickerView();
         invalidate();
     }
 
@@ -182,12 +199,29 @@ public final class DatePickerWheelView extends LinearLayout {
 
             calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos)));
             calendar.set(Calendar.MONTH, monthPos);
-            calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(days.get(dayPos)));
+            // Prevent an IndexOutOfBoundsException
+            calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(days.get(Math.min(days.size() - 1, dayPos))));
 
             final int year = calendar.get(Calendar.YEAR);
             final int month = calendar.get(Calendar.MONTH);
             final int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
 
+            if (calendar.getTimeInMillis() <= maxDate) {
+                if (validContentTextColor != Integer.MAX_VALUE) {
+                    // TODO: Change color (valid date)
+//                    yearSpinner.setContentTextColor(validContentTextColor);
+//                    monthSpinner.setContentTextColor(validContentTextColor);
+//                    daySpinner.setContentTextColor(validContentTextColor);
+                }
+            } else {
+                int contentTextColor = daySpinner.getContentTextColor();
+                if (contentTextColor != Color.RED)
+                    validContentTextColor = contentTextColor;
+                // TODO: Change color (invalid date)
+//                yearSpinner.setContentTextColor(Color.RED);
+//                monthSpinner.setContentTextColor(Color.RED);
+//                daySpinner.setContentTextColor(Color.RED);
+            }
             onDateSelectedListener.onDateSelected(year, month, dayOfMonth);
         }
     }
@@ -196,8 +230,14 @@ public final class DatePickerWheelView extends LinearLayout {
         final Calendar calendar = DateUtils.parseDateString(initialDate);
 
         yearPos = years.indexOf(String.valueOf(calendar.get(Calendar.YEAR)));
-        monthPos = months.indexOf(String.valueOf(calendar.get(Calendar.MONTH) + 1));
-        dayPos = days.indexOf(String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
+        String dateFormat = showShortMonths ? SHORT_MONTH_FORMAT : MONTH_FORMAT;
+        dateFormat = showLongMonths ? LONG_MONTH_FORMAT : dateFormat;
+        String formattedMonth = formatDate(calendar, locale, dateFormat);
+        formattedMonth = showShortMonths ? formattedMonth.toUpperCase(locale) : formattedMonth;
+        // Fixed: months array was accessed without custom format
+        monthPos = months.indexOf(formattedMonth);
+        // Fixed: days was accessed without "dd"
+        dayPos = days.indexOf(formatDate(calendar, locale, DAY_FORMAT));
 
         yearSpinner.setInitialPosition(yearPos);
         monthSpinner.setInitialPosition(monthPos);
@@ -223,7 +263,9 @@ public final class DatePickerWheelView extends LinearLayout {
         deleteAll(months);
         calendar = Calendar.getInstance(locale);
 
-        final String dateFormat = showShortMonths ? SHORT_MONTH_FORMAT : MONTH_FORMAT;
+        String dateFormat = showShortMonths ? SHORT_MONTH_FORMAT : MONTH_FORMAT;
+        // Support long months
+        dateFormat = showLongMonths ? LONG_MONTH_FORMAT : dateFormat;
 
         for (int j = 0; j <= calendar.getActualMaximum(Calendar.MONTH); j++) {
             calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos)));
@@ -246,6 +288,20 @@ public final class DatePickerWheelView extends LinearLayout {
 
         calendar = Calendar.getInstance(locale);
 
+        // Fixed: dayPos while changing to a shorter month
+        Calendar cl = Calendar.getInstance(locale);
+        cl.set(Calendar.YEAR, year);
+        cl.set(Calendar.DAY_OF_MONTH, 1);
+        cl.set(Calendar.MONTH, monthPos);
+        int actualMaximum = cl.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+        if (dayPos > actualMaximum - 1) {
+            int delta = dayPos - actualMaximum + 1;
+            dayPos = delta - 1;
+            daySpinner.forceScroll(delta);
+        }
+        ///
+
         for (int i = 0; i < calendar.getActualMaximum(Calendar.DAY_OF_MONTH); i++) {
             calendar.set(Calendar.YEAR, year);
             calendar.set(Calendar.MONTH, monthPos);
@@ -264,6 +320,10 @@ public final class DatePickerWheelView extends LinearLayout {
                 iterator.remove();
             }
         }
+    }
+
+    public void setMaxDate(long maxDate) {
+        this.maxDate = maxDate;
     }
 
     public interface OnDateSelectedListener {
@@ -289,6 +349,7 @@ public final class DatePickerWheelView extends LinearLayout {
         }
 
         this.maxYear = maxYear;
+        drawYearPickerView();
         invalidate();
         return this;
     }
@@ -307,6 +368,13 @@ public final class DatePickerWheelView extends LinearLayout {
 
     public DatePickerWheelView setShowShortMonths(boolean showShortMonths) {
         this.showShortMonths = showShortMonths;
+        drawMonthPickerView();
+        invalidate();
+        return this;
+    }
+
+    public DatePickerWheelView setShowLongMonths(boolean showLongMonths) {
+        this.showLongMonths = showLongMonths;
         drawMonthPickerView();
         invalidate();
         return this;
@@ -340,6 +408,13 @@ public final class DatePickerWheelView extends LinearLayout {
         this.initialDate = initialDate;
         setInitialPositions();
         invalidate();
+        return this;
+    }
+
+    public DatePickerWheelView setFont(String font) {
+        yearSpinner.setFont(font);
+        monthSpinner.setFont(font);
+        daySpinner.setFont(font);
         return this;
     }
 }

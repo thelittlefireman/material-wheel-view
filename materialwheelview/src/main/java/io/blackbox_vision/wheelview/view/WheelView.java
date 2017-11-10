@@ -83,6 +83,8 @@ public final class WheelView extends View {
     private int circularRadius;
     private int widgetWidth;
 
+    private String font;
+
     public Handler handler = new Handler(msg -> {
         switch (msg.what) {
             case MSG_INVALIDATE:
@@ -162,20 +164,26 @@ public final class WheelView extends View {
             throw new IllegalArgumentException("items list must not be null!");
         }
 
+        Typeface typeface;
+        if (font != null)
+            typeface = Typeface.createFromAsset(getContext().getAssets(), font);
+        else
+            typeface = Typeface.MONOSPACE;
+
         topBottomTextPaint.setColor(overflowTextColor);
         topBottomTextPaint.setAntiAlias(true);
-        topBottomTextPaint.setTypeface(Typeface.MONOSPACE);
+        topBottomTextPaint.setTypeface(typeface);
         topBottomTextPaint.setTextSize(textSize);
 
         centerTextPaint.setColor(contentTextColor);
         centerTextPaint.setAntiAlias(true);
         centerTextPaint.setTextScaleX(1.05F);
-        centerTextPaint.setTypeface(Typeface.MONOSPACE);
+        centerTextPaint.setTypeface(typeface);
         centerTextPaint.setTextSize(textSize);
 
         centerLinePaint.setColor(lineColor);
         centerLinePaint.setAntiAlias(true);
-        centerLinePaint.setTypeface(Typeface.MONOSPACE);
+        centerLinePaint.setTypeface(typeface);
         centerLinePaint.setTextSize(textSize);
 
         measureTextWidthHeight();
@@ -203,7 +211,8 @@ public final class WheelView extends View {
         final Rect rect = new Rect();
 
         for (int i = 0; i < items.size(); i++) {
-            final String s1 = (String) items.get(i);
+            // support lowerCase month names
+            final String s1 = (String) items.get(i) + "j";
 
             centerTextPaint.getTextBounds(s1, 0, s1.length(), rect);
 
@@ -429,6 +438,14 @@ public final class WheelView extends View {
         scheduledFuture = executorService.scheduleWithFixedDelay(new FlingRunnable(velocityY), 0, velocityFling, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * This fixes the item amount difference
+     * @param delta Number of items
+     */
+    public void forceScroll(int delta) {
+        totalScrollY += delta * itemHeight;
+    }
+
     class WheelViewGestureListener extends SimpleOnGestureListener {
 
         @Override
@@ -560,6 +577,19 @@ public final class WheelView extends View {
             velocity = (velocity < 0.0F) ? velocity + 20F : velocity - 20F;
             handler.sendEmptyMessage(MSG_INVALIDATE);
         }
+    }
+
+    public String getFont() {
+        return font;
+    }
+
+    public void setFont(String font) {
+        this.font = font;
+        initData();
+    }
+
+    public int getContentTextColor() {
+        return contentTextColor;
     }
 
     public interface OnLoopScrollListener {
