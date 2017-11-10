@@ -4,7 +4,6 @@ package io.blackbox_vision.wheelview.view;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -76,7 +75,7 @@ public final class DatePickerWheelView extends LinearLayout {
 
     private View rootView;
     private String mFont;
-    private long maxDate;
+    //    private long maxDate;
     //    private int validContentTextColor = Integer.MAX_VALUE;
     private boolean canLoop;
 
@@ -324,9 +323,9 @@ public final class DatePickerWheelView extends LinearLayout {
         }
     }
 
-    public void setMaxDate(long maxDate) {
-        this.maxDate = maxDate;
-    }
+//    public void setMaxDate(long maxDate) {
+//        this.maxDate = maxDate;
+//    }
 
     public interface OnDateSelectedListener {
 
