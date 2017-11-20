@@ -83,7 +83,7 @@ public final class WheelView extends View {
     private int circularRadius;
     private int widgetWidth;
 
-    private String font;
+    private String fontTypeface;
 
     public Handler handler = new Handler(msg -> {
         switch (msg.what) {
@@ -165,10 +165,11 @@ public final class WheelView extends View {
         }
 
         Typeface typeface;
-        if (font != null)
-            typeface = Typeface.createFromAsset(getContext().getAssets(), font);
-        else
+        if (fontTypeface != null) {
+            typeface = Typeface.createFromAsset(getContext().getAssets(), fontTypeface);
+        } else {
             typeface = Typeface.MONOSPACE;
+        }
 
         topBottomTextPaint.setColor(overflowTextColor);
         topBottomTextPaint.setAntiAlias(true);
@@ -440,6 +441,7 @@ public final class WheelView extends View {
 
     /**
      * This fixes the item amount difference
+     *
      * @param delta Number of items
      */
     public void forceScroll(int delta) {
@@ -579,12 +581,12 @@ public final class WheelView extends View {
         }
     }
 
-    public String getFont() {
-        return font;
+    public String getFontTypeface() {
+        return fontTypeface;
     }
 
-    public void setFont(String font) {
-        this.font = font;
+    public void setFontTypeface(String fontTypeface) {
+        this.fontTypeface = fontTypeface;
         initData();
     }
 
