@@ -46,7 +46,7 @@ public final class WheelView extends View {
     private final List<OnLoopScrollListener> listeners = new ArrayList<>();
 
     @NonNull
-    private final SimpleOnGestureListener onGestureListener  = new WheelViewGestureListener();
+    private final SimpleOnGestureListener onGestureListener = new WheelViewGestureListener();
     private GestureDetector gestureDetector;
 
     private final Paint topBottomTextPaint = new Paint();  //paint that draw top and bottom text
@@ -83,7 +83,7 @@ public final class WheelView extends View {
     private int circularRadius;
     private int widgetWidth;
 
-    private String font;
+    private String fontTypeface;
 
     public Handler handler = new Handler(msg -> {
         switch (msg.what) {
@@ -165,10 +165,11 @@ public final class WheelView extends View {
         }
 
         Typeface typeface;
-        if (font != null)
-            typeface = Typeface.createFromAsset(getContext().getAssets(), font);
-        else
+        if (fontTypeface != null) {
+            typeface = Typeface.createFromAsset(getContext().getAssets(), fontTypeface);
+        } else {
             typeface = Typeface.MONOSPACE;
+        }
 
         topBottomTextPaint.setColor(overflowTextColor);
         topBottomTextPaint.setAntiAlias(true);
@@ -414,7 +415,7 @@ public final class WheelView extends View {
     }
 
     private void onItemSelected() {
-        for (OnLoopScrollListener onLoopScrollListener: listeners) {
+        for (OnLoopScrollListener onLoopScrollListener : listeners) {
             onLoopScrollListener.onLoopScrollFinish(items.get(selectedIndex), items.indexOf(items.get(selectedIndex)));
         }
     }
@@ -440,6 +441,7 @@ public final class WheelView extends View {
 
     /**
      * This fixes the item amount difference
+     *
      * @param delta Number of items
      */
     public void forceScroll(int delta) {
@@ -545,7 +547,7 @@ public final class WheelView extends View {
         public void run() {
             if (velocity == Integer.MAX_VALUE) {
                 if (Math.abs(velocityY) > 2000F) {
-                    velocity = (velocityY > 0.0F) ? 2000F : - 2000F;
+                    velocity = (velocityY > 0.0F) ? 2000F : -2000F;
                 } else {
                     velocity = velocityY;
                 }
@@ -579,12 +581,12 @@ public final class WheelView extends View {
         }
     }
 
-    public String getFont() {
-        return font;
+    public String getFontTypeface() {
+        return fontTypeface;
     }
 
-    public void setFont(String font) {
-        this.font = font;
+    public void setFontTypeface(String fontTypeface) {
+        this.fontTypeface = fontTypeface;
         initData();
     }
 

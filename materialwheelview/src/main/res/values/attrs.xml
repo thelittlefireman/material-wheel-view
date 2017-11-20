@@ -21,6 +21,6 @@
         <attr name="datePickerWheelViewShowLongMonths" format="boolean"/>
         <attr name="datePickerWheelViewShowDayMonthYear" format="boolean"/>
         <attr name="datePickerWheelViewIsLoopEnabled" format="boolean"/>
-        <attr name="datePickerWheelViewFont" format="string"/>
+        <attr name="datePickerWheelViewFontTypeface" format="string"/>
     </declare-styleable>
 </resources>
