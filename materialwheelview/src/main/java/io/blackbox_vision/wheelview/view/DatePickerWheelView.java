@@ -74,9 +74,7 @@ public final class DatePickerWheelView extends LinearLayout {
     private Locale locale = Locale.getDefault();
 
     private View rootView;
-    private String mFont;
-    //    private long maxDate;
-    //    private int validContentTextColor = Integer.MAX_VALUE;
+    private String fontTypeface;
     private boolean canLoop;
 
     public DatePickerWheelView(Context context) {
@@ -119,7 +117,7 @@ public final class DatePickerWheelView extends LinearLayout {
                 maxYear = array.getInt(R.styleable.DatePickerWheelView_datePickerWheelViewMaxYear, 2100);
 
                 initialDate = array.getString(R.styleable.DatePickerWheelView_datePickerWheelViewInitialDate);
-                mFont = array.getString(R.styleable.DatePickerWheelView_datePickerWheelViewFont);
+                fontTypeface = array.getString(R.styleable.DatePickerWheelView_datePickerWheelViewFontTypeface);
                 canLoop = array.getBoolean(R.styleable.DatePickerWheelView_datePickerWheelViewIsLoopEnabled, false);
             }
         } finally {
@@ -171,7 +169,7 @@ public final class DatePickerWheelView extends LinearLayout {
         drawDayPickerView();
 
         setInitialPositions();
-        setFont(mFont);
+        setFontTypeface(fontTypeface);
     }
 
     private void updateYearPosition(@NonNull Object item, int position) {
@@ -205,24 +203,6 @@ public final class DatePickerWheelView extends LinearLayout {
             final int month = calendar.get(Calendar.MONTH);
             final int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
 
-//            if (calendar.getTimeInMillis() > maxDate) {
-//                int contentTextColor = daySpinner.getContentTextColor();
-//                if (contentTextColor != Color.RED) {
-//                    validContentTextColor = contentTextColor;
-//                }
-            // TODO: Change color (invalid date)
-//                yearSpinner.setContentTextColor(Color.RED);
-//                monthSpinner.setContentTextColor(Color.RED);
-//                daySpinner.setContentTextColor(Color.RED);
-//            }
-//            else {
-            // TODO: Change color (valid date)
-//                if (validContentTextColor != Integer.MAX_VALUE) {
-//                    yearSpinner.setContentTextColor(validContentTextColor);
-//                    monthSpinner.setContentTextColor(validContentTextColor);
-//                    daySpinner.setContentTextColor(validContentTextColor);
-//                }
-//            }
             onDateSelectedListener.onDateSelected(year, month, dayOfMonth);
         }
     }
@@ -323,10 +303,6 @@ public final class DatePickerWheelView extends LinearLayout {
         }
     }
 
-//    public void setMaxDate(long maxDate) {
-//        this.maxDate = maxDate;
-//    }
-
     public interface OnDateSelectedListener {
 
         void onDateSelected(int year, int month, int dayOfMonth);
@@ -412,10 +388,10 @@ public final class DatePickerWheelView extends LinearLayout {
         return this;
     }
 
-    public DatePickerWheelView setFont(String font) {
-        yearSpinner.setFont(font);
-        monthSpinner.setFont(font);
-        daySpinner.setFont(font);
+    public DatePickerWheelView setFontTypeface(String fontTypeface) {
+        yearSpinner.setFontTypeface(fontTypeface);
+        monthSpinner.setFontTypeface(fontTypeface);
+        daySpinner.setFontTypeface(fontTypeface);
         return this;
     }
 }
