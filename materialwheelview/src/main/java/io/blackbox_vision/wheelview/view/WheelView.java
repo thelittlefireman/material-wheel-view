@@ -18,6 +18,8 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -100,6 +102,7 @@ public final class WheelView extends View {
 
         return false;
     });
+    private Dictionary<String, Integer> mTextWidths = new Hashtable<>();
 
     public WheelView(Context context) {
         this(context, null);
@@ -189,6 +192,9 @@ public final class WheelView extends View {
 
         measureTextWidthHeight();
 
+//        topBottomTextPaint.setTextAlign(Paint.Align.CENTER);
+//        centerTextPaint.setTextAlign(Paint.Align.CENTER);
+
         //计算半圆周 -- maxTextHeight * lineSpacingMultiplier 表示每个item的高度  drawItemsCount = 7
         //实际显示5个,留两个是在圆周的上下面
         //lineSpacingMultiplier是指text上下的距离的值和maxTextHeight一样的意思 所以 = 2
@@ -212,8 +218,11 @@ public final class WheelView extends View {
         final Rect rect = new Rect();
 
         for (int i = 0; i < items.size(); i++) {
+
+            String item = (String) items.get(i);
+
             // support lowerCase month names
-            final String s1 = (String) items.get(i) + "j";
+            final String s1 = item + "j";
 
             centerTextPaint.getTextBounds(s1, 0, s1.length(), rect);
 
@@ -222,6 +231,12 @@ public final class WheelView extends View {
 
             maxTextWidth = (textWidth > maxTextWidth) ? textWidth : maxTextWidth;
             maxTextHeight = (textHeight > maxTextHeight) ? textHeight : maxTextHeight;
+
+            centerTextPaint.getTextBounds(s1, 0, s1.length() - 1, rect);
+
+            int originalTextWidth = rect.width();
+
+            mTextWidths.put(item, originalTextWidth);
         }
     }
 
@@ -316,6 +331,12 @@ public final class WheelView extends View {
                 //scale offset = Math.sin(radian) -> 0 - 1
                 canvas.scale(1.0F, (float) Math.sin(radian));
 
+                String text = itemCount[count];
+
+                int textWidth = mTextWidths.get(text);
+
+                float paddingLeftRight = this.paddingLeftRight + (maxTextWidth - textWidth) / 2.0f;
+
                 if (translateY <= topLineY || maxTextHeight + translateY >= bottomLineY) {
                     final int diff = (translateY <= topLineY) ? topLineY - translateY : bottomLineY - translateY;
 
@@ -325,19 +346,20 @@ public final class WheelView extends View {
                     //draw text y between 0 -> topLineY,include incomplete text
                     canvas.save();
                     canvas.clipRect(0, 0, widgetWidth, diff);
-                    canvas.drawText(itemCount[count], paddingLeftRight, maxTextHeight, topBottomPaint);
+                    canvas.drawText(text, paddingLeftRight, maxTextHeight, topBottomPaint);
                     canvas.restore();
                     canvas.save();
                     canvas.clipRect(0, diff, widgetWidth, (int) (itemHeight));
-                    canvas.drawText(itemCount[count], paddingLeftRight, maxTextHeight, centerPaint);
+                    canvas.drawText(text, paddingLeftRight, maxTextHeight, centerPaint);
                     canvas.restore();
 
                 } else if (translateY >= topLineY && maxTextHeight + translateY <= bottomLineY) {
                     //draw center complete text
                     canvas.clipRect(0, 0, widgetWidth, (int) (itemHeight));
-                    canvas.drawText(itemCount[count], paddingLeftRight, maxTextHeight, centerTextPaint);
+
+                    canvas.drawText(text, paddingLeftRight, maxTextHeight, centerTextPaint);
                     //center one indicate selected item
-                    selectedIndex = items.indexOf(itemCount[count]);
+                    selectedIndex = items.indexOf(text);
                 }
 
                 canvas.restore();
@@ -427,7 +449,7 @@ public final class WheelView extends View {
         }
     }
 
-    private void startSmoothScrollTo() {
+    public void startSmoothScrollTo() {
         int offset = (int) (totalScrollY % (itemHeight));
         cancelSchedule();
         scheduledFuture = executorService.scheduleWithFixedDelay(new HalfHeightRunnable(offset), 0, 10, TimeUnit.MILLISECONDS);
@@ -552,8 +574,6 @@ public final class WheelView extends View {
                     velocity = velocityY;
                 }
             }
-
-            Log.i(TAG, "velocity -> " + velocity);
 
             if (Math.abs(velocity) >= 0.0F && Math.abs(velocity) <= 20F) {
                 cancelSchedule();
