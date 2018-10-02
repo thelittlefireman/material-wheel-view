@@ -19,8 +19,10 @@ import android.view.View;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -102,7 +104,7 @@ public final class WheelView extends View {
 
         return false;
     });
-    private Dictionary<String, Integer> mTextWidths = new Hashtable<>();
+    private Map<String, Integer> mTextWidths = new HashMap<>();
 
     public WheelView(Context context) {
         this(context, null);
@@ -333,7 +335,10 @@ public final class WheelView extends View {
 
                 String text = itemCount[count];
 
-                int textWidth = mTextWidths.get(text);
+                int textWidth = maxTextWidth;
+                if (mTextWidths.containsKey(text)) {
+                    textWidth = mTextWidths.get(text);
+                }
 
                 float paddingLeftRight = this.paddingLeftRight + (maxTextWidth - textWidth) / 2.0f;
 
