@@ -29,6 +29,7 @@ import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
 import io.blackbox_vision.wheelview.WheelViewListener;
 import io.blackbox_vision.wheelview.data.ItemMapper;
+import io.blackbox_vision.wheelview.data.SimpleWheelData;
 import io.blackbox_vision.wheelview.data.WheelData;
 
 import static android.view.GestureDetector.SimpleOnGestureListener;
@@ -303,7 +304,7 @@ public final class WheelView extends View {
                 templateItem = (templateItem > items.size() - 1) ? templateItem - items.size() : templateItem;
                 itemCount[count] = itemMapper.map(items.get(templateItem));
             } else if (templateItem < 0 || templateItem > items.size() - 1) {
-                itemCount[count] = null;
+                itemCount[count] = new SimpleWheelData("");
             } else {
                 itemCount[count] = itemMapper.map(items.get(templateItem));
             }

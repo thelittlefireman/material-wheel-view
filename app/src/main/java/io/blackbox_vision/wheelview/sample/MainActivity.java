@@ -13,6 +13,7 @@ import java.util.Locale;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import io.blackbox_vision.wheelview.data.SimpleWheelData;
 import io.blackbox_vision.wheelview.view.DatePickerPopUpWindow;
 import io.blackbox_vision.wheelview.view.WheelView;
 
@@ -74,10 +75,10 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     public List getList() {
-        ArrayList<String> list = new ArrayList<>();
+        ArrayList<SimpleWheelData> list = new ArrayList<>();
 
         for (int i = 0; i < 50; i++) {
-            list.add("DAY TEST:" + i);
+            list.add(new SimpleWheelData("DAY TEST:" + i));
         }
 
         return list;

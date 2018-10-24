@@ -18,7 +18,7 @@ import java.util.Locale;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
-import io.blackbox_vision.wheelview.data.DatePickerData;
+import io.blackbox_vision.wheelview.data.SimpleWheelData;
 import io.blackbox_vision.wheelview.data.WheelData;
 import io.blackbox_vision.wheelview.utils.DateUtils;
 
@@ -236,7 +236,7 @@ public final class DatePickerWheelView extends LinearLayout {
         for (int i = 0; i < yearCount; i++) {
             calendar.set(Calendar.YEAR, minYear + i);
 
-            years.add(i, new DatePickerData(formatDate(calendar, locale, YEAR_FORMAT)));
+            years.add(i, new SimpleWheelData(formatDate(calendar, locale, YEAR_FORMAT)));
         }
 
         yearSpinner.setItems(years);
@@ -258,7 +258,7 @@ public final class DatePickerWheelView extends LinearLayout {
             String formattedMonth = formatDate(calendar, locale, dateFormat);
             formattedMonth = showShortMonths ? formattedMonth.toUpperCase(locale) : formattedMonth;
 
-            months.add(j, new DatePickerData(formattedMonth));
+            months.add(j, new SimpleWheelData(formattedMonth));
         }
 
         monthSpinner.setItems(months);
@@ -290,7 +290,7 @@ public final class DatePickerWheelView extends LinearLayout {
             calendar.set(Calendar.MONTH, monthPos);
             calendar.set(Calendar.DAY_OF_MONTH, i + 1);
 
-            days.add(i, new DatePickerData (formatDate(calendar, locale, DAY_FORMAT)));
+            days.add(i, new SimpleWheelData (formatDate(calendar, locale, DAY_FORMAT)));
         }
 
         daySpinner.setItems(days);
