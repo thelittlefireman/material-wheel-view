@@ -13,9 +13,10 @@ import java.util.Locale;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import io.blackbox_vision.wheelview.data.SimpleWheelData;
+import io.blackbox_vision.wheelview.WheelViewListener;
 import io.blackbox_vision.wheelview.view.DatePickerPopUpWindow;
 import io.blackbox_vision.wheelview.view.WheelView;
+import io.blackbox_vision.wheelview.view.WheelViewAdapter;
 
 
 public final class MainActivity extends AppCompatActivity {
@@ -55,13 +56,32 @@ public final class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Working on...", Toast.LENGTH_SHORT).show();
         });
 
-        final WheelView wheelView = (WheelView) findViewById(R.id.loop_view);
+        final WheelView wheelView = findViewById(R.id.loop_view);
 
         wheelView.setInitialPosition(2);
         wheelView.setIsLoopEnabled(false);
-        wheelView.addOnLoopScrollListener((item, position) -> {});
+        wheelView.addOnLoopScrollListener((item, position) -> {
+        });
         wheelView.setTextSize(12);
-        wheelView.setItems(getList());
+        wheelView.setWheelViewListener((WheelViewListener<String>) (position, data) -> System.out.println( data +
+                                                                                                                   "selected"));
+
+        wheelView.setWheelViewAdapter(new WheelViewAdapter() {
+            @Override
+            public String getText(int position) {
+                return getList().get(position);
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return getList().get(position);
+            }
+
+            @Override
+            public int getItemCount() {
+                return getList().size();
+            }
+        });
     }
 
     private void onDateSelected(int year, int month, int dayOfMonth) {
@@ -74,11 +94,11 @@ public final class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, formatter.format(calendar.getTime()), Toast.LENGTH_SHORT).show();
     }
 
-    public List getList() {
-        ArrayList<SimpleWheelData> list = new ArrayList<>();
+    public List<String> getList() {
+        ArrayList<String> list = new ArrayList<>();
 
         for (int i = 0; i < 50; i++) {
-            list.add(new SimpleWheelData("DAY TEST:" + i));
+            list.add("DAY TEST:" + i);
         }
 
         return list;

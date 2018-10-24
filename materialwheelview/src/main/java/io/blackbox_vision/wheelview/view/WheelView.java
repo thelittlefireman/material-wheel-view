@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -28,9 +29,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
 import io.blackbox_vision.wheelview.WheelViewListener;
-import io.blackbox_vision.wheelview.data.ItemMapper;
-import io.blackbox_vision.wheelview.data.SimpleWheelData;
-import io.blackbox_vision.wheelview.data.WheelData;
 
 import static android.view.GestureDetector.SimpleOnGestureListener;
 
@@ -47,7 +45,11 @@ public final class WheelView extends View {
 
     private ScheduledFuture<?> scheduledFuture;
 
-    private final WheelViewListener mWheelViewListener = null;
+    private WheelViewListener mWheelViewListener;
+
+    public void setWheelViewListener(WheelViewListener wheelViewListener) {
+        this.mWheelViewListener = wheelViewListener;
+    }
 
     public WheelViewListener getWheelViewListener() {
         return mWheelViewListener;
@@ -64,10 +66,22 @@ public final class WheelView extends View {
     private final Paint centerTextPaint = new Paint();  // paint that draw center text
     private final Paint centerLinePaint = new Paint();  // paint that draw line besides center text
 
-    private List<WheelData> items;
-    private ItemMapper itemMapper;
+    private WheelViewAdapter mWheelViewAdapter;
 
-    private WheelData[] itemCount;
+    public WheelViewAdapter getWheelViewAdapter() {
+        return mWheelViewAdapter;
+    }
+
+    public void setWheelViewAdapter(WheelViewAdapter wheelViewAdapter) {
+        if (wheelViewAdapter == null) {
+            throw new IllegalArgumentException("WheelViewAdapter can't be null");
+        }
+        mWheelViewAdapter = wheelViewAdapter;
+        mWheelViewAdapter.setWheelView(this);
+        initData();
+    }
+
+    private HashMap<Integer, Pair<Integer, String>> itemsToShow;
 
     private float lineSpacingMultiplier;
     private float itemHeight;
@@ -75,7 +89,11 @@ public final class WheelView extends View {
     private boolean canLoop;
 
     private int totalScrollY;
+
     private int selectedIndex;
+
+    private int previousSelectedIndex;
+
     private int textSize;
     private int maxTextWidth;
     private int maxTextHeight;
@@ -164,8 +182,7 @@ public final class WheelView extends View {
             setLayerType(LAYER_TYPE_SOFTWARE, null);
         }
 
-        itemMapper = item -> (WheelData) item;
-        itemCount = new WheelData[drawItemsCount];
+        itemsToShow = new HashMap<>();
 
         gestureDetector = new GestureDetector(getContext(), onGestureListener);
         gestureDetector.setIsLongpressEnabled(false);
@@ -173,9 +190,6 @@ public final class WheelView extends View {
 
 
     private void initData() {
-        if (null == items) {
-            throw new IllegalArgumentException("items list must not be null!");
-        }
 
         Typeface typeface;
         if (fontTypeface != null) {
@@ -217,7 +231,7 @@ public final class WheelView extends View {
         // FIXME: 7/8/16  通过控件的高度来计算圆弧的周长
 
         if (initialPosition == -1) {
-            initialPosition = canLoop ? (items.size() + 1) / 2 : 0;
+            initialPosition = canLoop ? (mWheelViewAdapter.getItemCount() + 1) / 2 : 0;
         }
 
         currentIndex = initialPosition;
@@ -227,9 +241,9 @@ public final class WheelView extends View {
     private void measureTextWidthHeight() {
         final Rect rect = new Rect();
 
-        for (int i = 0; i < items.size(); i++) {
+        for (int i = 0; i < mWheelViewAdapter.getItemCount(); i++) {
 
-            String itemText = items.get(i).getWheelText();
+            String itemText = mWheelViewAdapter.getText(i);
 
             // support lowerCase month names
             final String s1 = itemText + "j";
@@ -273,24 +287,26 @@ public final class WheelView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (items == null) {
+        if (mWheelViewAdapter == null) {
             super.onDraw(canvas);
             return;
         }
 
         super.onDraw(canvas);
 
+        int wheelViewAdapterCount = mWheelViewAdapter.getItemCount();
+
         //the length of single item is itemHeight
         int mChangingItem = (int) (totalScrollY / (itemHeight));
 
-        currentIndex = initialPosition + mChangingItem % items.size();
+        currentIndex = initialPosition + mChangingItem % wheelViewAdapterCount;
 
         if (!canLoop) { // can loop
             currentIndex = (currentIndex < 0) ? 0 : currentIndex;
-            currentIndex = (currentIndex > items.size() - 1) ? items.size() - 1 : currentIndex;
+            currentIndex = (currentIndex > wheelViewAdapterCount - 1) ? wheelViewAdapterCount - 1 : currentIndex;
         } else { //can not loop
-            currentIndex = (currentIndex < 0) ? currentIndex + items.size() : currentIndex;
-            currentIndex = (currentIndex > items.size() - 1) ? currentIndex - items.size() : currentIndex;
+            currentIndex = (currentIndex < 0) ? currentIndex + wheelViewAdapterCount : currentIndex;
+            currentIndex = (currentIndex > wheelViewAdapterCount - 1) ? currentIndex - wheelViewAdapterCount : currentIndex;
         }
 
         int count = 0;
@@ -300,13 +316,13 @@ public final class WheelView extends View {
             int templateItem = currentIndex - (drawItemsCount / 2 - count);
 
             if (canLoop) {
-                templateItem = (templateItem < 0) ? templateItem + items.size() : templateItem;
-                templateItem = (templateItem > items.size() - 1) ? templateItem - items.size() : templateItem;
-                itemCount[count] = itemMapper.map(items.get(templateItem));
-            } else if (templateItem < 0 || templateItem > items.size() - 1) {
-                itemCount[count] = new SimpleWheelData("");
+                templateItem = (templateItem < 0) ? templateItem + wheelViewAdapterCount : templateItem;
+                templateItem = (templateItem > wheelViewAdapterCount - 1) ? templateItem - wheelViewAdapterCount : templateItem;
+                itemsToShow.put(count, new Pair<>(templateItem, mWheelViewAdapter.getText(templateItem)));
+            } else if (templateItem < 0 || templateItem > wheelViewAdapterCount - 1) {
+                itemsToShow.put(count, new Pair<>(templateItem, ""));
             } else {
-                itemCount[count] = itemMapper.map(items.get(templateItem));
+                itemsToShow.put(count, new Pair<>(templateItem, mWheelViewAdapter.getText(templateItem)));
             }
 
             count++;
@@ -341,8 +357,10 @@ public final class WheelView extends View {
                 canvas.translate(0.0F, translateY);
                 //scale offset = Math.sin(radian) -> 0 - 1
                 canvas.scale(1.0F, (float) Math.sin(radian));
-                WheelData wheelData = itemCount[count];
-                String text = wheelData.getWheelText();
+
+                Pair<Integer, String> item = itemsToShow.get(count);
+                int originalPos = item.first;
+                String text = item.second;
 
                 int textWidth = maxTextWidth;
                 if (mTextWidths.containsKey(text)) {
@@ -373,7 +391,7 @@ public final class WheelView extends View {
 
                     canvas.drawText(text, paddingLeftRight, maxTextHeight, centerTextPaint);
                     //center one indicate selected item
-                    selectedIndex = items.indexOf(wheelData);
+                    selectedIndex = originalPos;
                 }
 
                 canvas.restore();
@@ -437,28 +455,18 @@ public final class WheelView extends View {
         invalidate();
     }
 
-    public void setItemMapper(@NonNull ItemMapper mapper) {
-        this.itemMapper = mapper;
-    }
-
-    public void setItems(@NonNull List<WheelData> items) {
-        this.items = items;
-        initData();
-    }
-
     private void itemSelected() {
         postDelayed(this::onItemSelected, 200L);
     }
 
     private void onItemSelected() {
-        if(selectedIndex >= 0 && selectedIndex < items.size()) {
-            int position = items.indexOf(items.get(selectedIndex));
-            WheelData wheelData = items.get(selectedIndex);
+        if (selectedIndex >= 0 && selectedIndex < mWheelViewAdapter.getItemCount()) {
+            Object wheelData = mWheelViewAdapter.getItem(selectedIndex);
             for (OnLoopScrollListener onLoopScrollListener : listeners) {
-                onLoopScrollListener.onLoopScrollFinish(wheelData, position);
+                onLoopScrollListener.onLoopScrollFinish(wheelData, selectedIndex);
             }
             if (mWheelViewListener != null) {
-                mWheelViewListener.onItemSelected(position, wheelData);
+                mWheelViewListener.onItemSelected(selectedIndex, wheelData);
             }
         }
     }
@@ -515,7 +523,7 @@ public final class WheelView extends View {
             totalScrollY = (int) ((float) totalScrollY + distanceY);
 
             if (!canLoop) {
-                final int circleLength = (int) ((float) (items.size() - 1 - initialPosition) * (itemHeight));
+                final int circleLength = (int) ((float) (mWheelViewAdapter.getItemCount() - 1 - initialPosition) * (itemHeight));
                 final int initPositionCircleLength = (int) (initialPosition * (itemHeight));
                 final int initPositionStartY = -1 * initPositionCircleLength;
 
@@ -613,8 +621,8 @@ public final class WheelView extends View {
                 if (totalScrollY <= (int) ((float) (-initialPosition) * itemHeight)) {
                     velocity = 40F;
                     totalScrollY = (int) ((float) (-initialPosition) * itemHeight);
-                } else if (totalScrollY >= (int) ((float) (items.size() - 1 - initialPosition) * itemHeight)) {
-                    totalScrollY = (int) ((float) (items.size() - 1 - initialPosition) * itemHeight);
+                } else if (totalScrollY >= (int) ((float) (mWheelViewAdapter.getItemCount() - 1 - initialPosition) * itemHeight)) {
+                    totalScrollY = (int) ((float) (mWheelViewAdapter.getItemCount() - 1 - initialPosition) * itemHeight);
                     velocity = -40F;
                 }
             }

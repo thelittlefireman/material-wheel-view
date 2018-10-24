@@ -18,8 +18,6 @@ import java.util.Locale;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
-import io.blackbox_vision.wheelview.data.SimpleWheelData;
-import io.blackbox_vision.wheelview.data.WheelData;
 import io.blackbox_vision.wheelview.utils.DateUtils;
 
 import static io.blackbox_vision.wheelview.utils.DateUtils.formatDate;
@@ -55,13 +53,13 @@ public final class DatePickerWheelView extends LinearLayout {
     private boolean showLongMonths;
 
     @NonNull
-    private final List<WheelData> years = new ArrayList<>();
+    private final List<String> years = new ArrayList<>();
 
     @NonNull
-    private final List<WheelData> months = new ArrayList<>();
+    private final List<String> months = new ArrayList<>();
 
     @NonNull
-    private final List<WheelData> days = new ArrayList<>();
+    private final List<String> days = new ArrayList<>();
 
     private int yearPos = 0;
     private int monthPos = 0;
@@ -196,10 +194,10 @@ public final class DatePickerWheelView extends LinearLayout {
         if (null != onDateSelectedListener) {
             final Calendar calendar = Calendar.getInstance(locale);
 
-            calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos).getWheelText()));
+            calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos)));
             calendar.set(Calendar.MONTH, monthPos);
             // Prevent an IndexOutOfBoundsException
-            calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(days.get(Math.min(days.size() - 1, dayPos)).getWheelText()));
+            calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(days.get(Math.min(days.size() - 1, dayPos))));
 
             final int year = calendar.get(Calendar.YEAR);
             final int month = calendar.get(Calendar.MONTH);
@@ -236,10 +234,25 @@ public final class DatePickerWheelView extends LinearLayout {
         for (int i = 0; i < yearCount; i++) {
             calendar.set(Calendar.YEAR, minYear + i);
 
-            years.add(i, new SimpleWheelData(formatDate(calendar, locale, YEAR_FORMAT)));
+            years.add(i, formatDate(calendar, locale, YEAR_FORMAT));
         }
 
-        yearSpinner.setItems(years);
+        yearSpinner.setWheelViewAdapter(new WheelViewAdapter() {
+            @Override
+            public String getText(int position) {
+                return years.get(position);
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return years.get(position);
+            }
+
+            @Override
+            public int getItemCount() {
+                return years.size();
+            }
+        });
     }
 
     private void drawMonthPickerView() {
@@ -251,22 +264,37 @@ public final class DatePickerWheelView extends LinearLayout {
         dateFormat = showLongMonths ? LONG_MONTH_FORMAT : dateFormat;
 
         for (int j = 0; j <= calendar.getActualMaximum(Calendar.MONTH); j++) {
-            calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos).getWheelText()));
+            calendar.set(Calendar.YEAR, Integer.valueOf(years.get(yearPos)));
             calendar.set(Calendar.MONTH, j);
             calendar.set(Calendar.DAY_OF_MONTH, 1);
 
             String formattedMonth = formatDate(calendar, locale, dateFormat);
             formattedMonth = showShortMonths ? formattedMonth.toUpperCase(locale) : formattedMonth;
 
-            months.add(j, new SimpleWheelData(formattedMonth));
+            months.add(j, formattedMonth);
         }
 
-        monthSpinner.setItems(months);
+        monthSpinner.setWheelViewAdapter(new WheelViewAdapter() {
+            @Override
+            public String getText(int position) {
+                return months.get(position);
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return months.get(position);
+            }
+
+            @Override
+            public int getItemCount() {
+                return months.size();
+            }
+        });
     }
 
     private void drawDayPickerView() {
         deleteAll(days);
-        final int year = Integer.valueOf(years.get(yearPos).getWheelText());
+        final int year = Integer.valueOf(years.get(yearPos));
         //final int month = showShortMonths ? months.indexOf(months.get(monthPos)) + 1 : Integer.valueOf(months.get(monthPos));
 
         calendar = Calendar.getInstance(locale);
@@ -290,10 +318,25 @@ public final class DatePickerWheelView extends LinearLayout {
             calendar.set(Calendar.MONTH, monthPos);
             calendar.set(Calendar.DAY_OF_MONTH, i + 1);
 
-            days.add(i, new SimpleWheelData (formatDate(calendar, locale, DAY_FORMAT)));
+            days.add(i, formatDate(calendar, locale, DAY_FORMAT));
         }
 
-        daySpinner.setItems(days);
+        daySpinner.setWheelViewAdapter(new WheelViewAdapter() {
+            @Override
+            public String getText(int position) {
+                return days.get(position);
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return days.get(position);
+            }
+
+            @Override
+            public int getItemCount() {
+                return days.size();
+            }
+        });
     }
 
     private void deleteAll(@NonNull List list) {
