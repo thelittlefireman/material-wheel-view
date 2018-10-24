@@ -5,5 +5,5 @@ import androidx.annotation.NonNull;
 
 public interface ItemMapper {
 
-    String map(@NonNull Object object);
+    WheelData map(@NonNull Object object);
 }

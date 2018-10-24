@@ -9,8 +9,6 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Handler;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -18,9 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -28,8 +24,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import io.blackbox_vision.wheelview.data.ItemMapper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
+import io.blackbox_vision.wheelview.WheelViewListener;
+import io.blackbox_vision.wheelview.data.ItemMapper;
+import io.blackbox_vision.wheelview.data.WheelData;
 
 import static android.view.GestureDetector.SimpleOnGestureListener;
 
@@ -46,6 +46,12 @@ public final class WheelView extends View {
 
     private ScheduledFuture<?> scheduledFuture;
 
+    private final WheelViewListener mWheelViewListener = null;
+
+    public WheelViewListener getWheelViewListener() {
+        return mWheelViewListener;
+    }
+
     @NonNull
     private final List<OnLoopScrollListener> listeners = new ArrayList<>();
 
@@ -57,10 +63,10 @@ public final class WheelView extends View {
     private final Paint centerTextPaint = new Paint();  // paint that draw center text
     private final Paint centerLinePaint = new Paint();  // paint that draw line besides center text
 
-    private List items;
+    private List<WheelData> items;
     private ItemMapper itemMapper;
 
-    private String[] itemCount;
+    private WheelData[] itemCount;
 
     private float lineSpacingMultiplier;
     private float itemHeight;
@@ -141,7 +147,8 @@ public final class WheelView extends View {
                 lineColor = array.getColor(R.styleable.WheelView_wheelViewLineColor, 0xffc5c5c5);
                 canLoop = array.getBoolean(R.styleable.WheelView_wheelViewIsLoopEnabled, false);
                 initialPosition = array.getInt(R.styleable.WheelView_wheelViewInitialPosition, -1);
-                textSize = array.getDimensionPixelSize(R.styleable.WheelView_wheelViewTextSize, sp2px(getContext(), 16));
+                textSize = array.getDimensionPixelSize(R.styleable.WheelView_wheelViewTextSize,
+                                                       sp2px(getContext(), 16));
                 drawItemsCount = array.getInt(R.styleable.WheelView_wheelViewDrawItemCount, 7);
             }
         } finally {
@@ -156,8 +163,8 @@ public final class WheelView extends View {
             setLayerType(LAYER_TYPE_SOFTWARE, null);
         }
 
-        itemMapper = item -> (String) item;
-        itemCount = new String[drawItemsCount];
+        itemMapper = item -> (WheelData) item;
+        itemCount = new WheelData[drawItemsCount];
 
         gestureDetector = new GestureDetector(getContext(), onGestureListener);
         gestureDetector.setIsLongpressEnabled(false);
@@ -221,7 +228,7 @@ public final class WheelView extends View {
 
         for (int i = 0; i < items.size(); i++) {
 
-            String item = (String) items.get(i);
+            WheelData item = items.get(i);
 
             // support lowerCase month names
             final String s1 = item + "j";
@@ -238,7 +245,7 @@ public final class WheelView extends View {
 
             int originalTextWidth = rect.width();
 
-            mTextWidths.put(item, originalTextWidth);
+            mTextWidths.put(item.getWheelText(), originalTextWidth);
         }
     }
 
@@ -296,7 +303,7 @@ public final class WheelView extends View {
                 templateItem = (templateItem > items.size() - 1) ? templateItem - items.size() : templateItem;
                 itemCount[count] = itemMapper.map(items.get(templateItem));
             } else if (templateItem < 0 || templateItem > items.size() - 1) {
-                itemCount[count] = "";
+                itemCount[count] = null;
             } else {
                 itemCount[count] = itemMapper.map(items.get(templateItem));
             }
@@ -327,13 +334,14 @@ public final class WheelView extends View {
             } else {
                 // translateY = r - r*cos(å) -
                 //(Math.sin(radian) * maxTextHeight) / 2 this is text offset
-                int translateY = (int) (circularRadius - Math.cos(radian) * circularRadius - (Math.sin(radian) * maxTextHeight) / 2) + paddingTopBottom;
+                int translateY = (int) (circularRadius - Math.cos(radian) * circularRadius - (Math.sin(
+                        radian) * maxTextHeight) / 2) + paddingTopBottom;
 
                 canvas.translate(0.0F, translateY);
                 //scale offset = Math.sin(radian) -> 0 - 1
                 canvas.scale(1.0F, (float) Math.sin(radian));
 
-                String text = itemCount[count];
+                String text = itemCount[count].getWheelText();
 
                 int textWidth = maxTextWidth;
                 if (mTextWidths.containsKey(text)) {
@@ -432,7 +440,7 @@ public final class WheelView extends View {
         this.itemMapper = mapper;
     }
 
-    public void setItems(@NonNull List items) {
+    public void setItems(@NonNull List<WheelData> items) {
         this.items = items;
         initData();
     }
@@ -442,8 +450,13 @@ public final class WheelView extends View {
     }
 
     private void onItemSelected() {
+        int position = items.indexOf(items.get(selectedIndex));
+        WheelData wheelData = items.get(selectedIndex);
         for (OnLoopScrollListener onLoopScrollListener : listeners) {
-            onLoopScrollListener.onLoopScrollFinish(items.get(selectedIndex), items.indexOf(items.get(selectedIndex)));
+            onLoopScrollListener.onLoopScrollFinish(wheelData, position);
+        }
+        if (mWheelViewListener != null){
+            mWheelViewListener.onItemSelected(position, wheelData);
         }
     }
 
@@ -457,13 +470,15 @@ public final class WheelView extends View {
     public void startSmoothScrollTo() {
         int offset = (int) (totalScrollY % (itemHeight));
         cancelSchedule();
-        scheduledFuture = executorService.scheduleWithFixedDelay(new HalfHeightRunnable(offset), 0, 10, TimeUnit.MILLISECONDS);
+        scheduledFuture = executorService.scheduleWithFixedDelay(new HalfHeightRunnable(offset), 0, 10,
+                                                                 TimeUnit.MILLISECONDS);
     }
 
     private void startSmoothScrollTo(float velocityY) {
         cancelSchedule();
         int velocityFling = 20;
-        scheduledFuture = executorService.scheduleWithFixedDelay(new FlingRunnable(velocityY), 0, velocityFling, TimeUnit.MILLISECONDS);
+        scheduledFuture = executorService.scheduleWithFixedDelay(new FlingRunnable(velocityY), 0, velocityFling,
+                                                                 TimeUnit.MILLISECONDS);
     }
 
     /**
