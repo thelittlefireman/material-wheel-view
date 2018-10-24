@@ -229,10 +229,10 @@ public final class WheelView extends View {
 
         for (int i = 0; i < items.size(); i++) {
 
-            WheelData item = items.get(i);
+            String itemText = items.get(i).getWheelText();
 
             // support lowerCase month names
-            final String s1 = item + "j";
+            final String s1 = itemText + "j";
 
             centerTextPaint.getTextBounds(s1, 0, s1.length(), rect);
 
@@ -246,7 +246,7 @@ public final class WheelView extends View {
 
             int originalTextWidth = rect.width();
 
-            mTextWidths.put(item.getWheelText(), originalTextWidth);
+            mTextWidths.put(itemText, originalTextWidth);
         }
     }
 
@@ -341,8 +341,8 @@ public final class WheelView extends View {
                 canvas.translate(0.0F, translateY);
                 //scale offset = Math.sin(radian) -> 0 - 1
                 canvas.scale(1.0F, (float) Math.sin(radian));
-
-                String text = itemCount[count].getWheelText();
+                WheelData wheelData = itemCount[count];
+                String text = wheelData.getWheelText();
 
                 int textWidth = maxTextWidth;
                 if (mTextWidths.containsKey(text)) {
@@ -373,7 +373,7 @@ public final class WheelView extends View {
 
                     canvas.drawText(text, paddingLeftRight, maxTextHeight, centerTextPaint);
                     //center one indicate selected item
-                    selectedIndex = items.indexOf(text);
+                    selectedIndex = items.indexOf(wheelData);
                 }
 
                 canvas.restore();
@@ -451,13 +451,15 @@ public final class WheelView extends View {
     }
 
     private void onItemSelected() {
-        int position = items.indexOf(items.get(selectedIndex));
-        WheelData wheelData = items.get(selectedIndex);
-        for (OnLoopScrollListener onLoopScrollListener : listeners) {
-            onLoopScrollListener.onLoopScrollFinish(wheelData, position);
-        }
-        if (mWheelViewListener != null){
-            mWheelViewListener.onItemSelected(position, wheelData);
+        if(selectedIndex >= 0 && selectedIndex < items.size()) {
+            int position = items.indexOf(items.get(selectedIndex));
+            WheelData wheelData = items.get(selectedIndex);
+            for (OnLoopScrollListener onLoopScrollListener : listeners) {
+                onLoopScrollListener.onLoopScrollFinish(wheelData, position);
+            }
+            if (mWheelViewListener != null) {
+                mWheelViewListener.onItemSelected(position, wheelData);
+            }
         }
     }
 
