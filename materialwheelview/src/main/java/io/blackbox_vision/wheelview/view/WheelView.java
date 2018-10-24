@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.blackbox_vision.wheelview.R;
-import io.blackbox_vision.wheelview.WheelViewListener;
 
 import static android.view.GestureDetector.SimpleOnGestureListener;
 
@@ -44,16 +43,6 @@ public final class WheelView extends View {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     private ScheduledFuture<?> scheduledFuture;
-
-    private WheelViewListener mWheelViewListener;
-
-    public void setWheelViewListener(WheelViewListener wheelViewListener) {
-        this.mWheelViewListener = wheelViewListener;
-    }
-
-    public WheelViewListener getWheelViewListener() {
-        return mWheelViewListener;
-    }
 
     @NonNull
     private final List<OnLoopScrollListener> listeners = new ArrayList<>();
@@ -464,9 +453,6 @@ public final class WheelView extends View {
             Object wheelData = mWheelViewAdapter.getItem(selectedIndex);
             for (OnLoopScrollListener onLoopScrollListener : listeners) {
                 onLoopScrollListener.onLoopScrollFinish(wheelData, selectedIndex);
-            }
-            if (mWheelViewListener != null) {
-                mWheelViewListener.onItemSelected(selectedIndex, wheelData);
             }
         }
     }
